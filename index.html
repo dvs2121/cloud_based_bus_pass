@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Bus Pass System</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>🚌 Cloud Bus Pass</h1>
+        <p>Secure, Dynamic, and Loss-Proof Ticketing</p>
+    </header>
+
+    <main>
+        <!-- SEARCH FORM SECTION -->
+        <section id="search-section" class="card">
+            <h2>Search Buses</h2>
+            <form id="search-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="source">From (Source):</label>
+                        <select id="source" required>
+                            <option value="">Select Source City</option>
+                            <!-- EDIT CITIES HERE -->
+                            <option value="New Delhi">New Delhi</option>
+                            <option value="Bombay">Bombay</option>
+                            <option value="Chictrakooth">Chictrakooth</option>
+                            <option value="Mathura">Mathura</option>
+                            <option value="Sitapur">Sitapur</option>
+                            <option value="Bariely">Bariely</option>
+                            <option value="Kanpur">Kanpur</option>
+                            <option value="Lucknow">Lucknow</option>
+                            <option value="jhansi">Jhansi</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="destination">To (Destination):</label>
+                        <select id="destination" required>
+                            <option value="">Select Destination City</option>
+                            <!-- EDIT CITIES HERE -->
+                        <option value="New Delhi">New Delhi</option>
+                            <option value="Bombay">Bombay</option>
+                            <option value="Chictrakooth">Chictrakooth</option>
+                            <option value="Mathura">Mathura</option>
+                            <option value="Sitapur">Sitapur</option>
+                            <option value="Bariely">Bariely</option>
+                            <option value="Kanpur">Kanpur</option>
+                            <option value="Lucknow">Lucknow</option>
+                            <option value="jhansi">Jhansi</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="travel-date">Travel Date:</label>
+                        <input type="date" id="travel-date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="travel-time">Departure Time:</label>
+                        <select id="travel-time" required>
+                            <option value="">Any Time</option>
+                            <option value="morning">Morning (6AM - 12PM)</option>
+                            <option value="afternoon">Afternoon (12PM - 6PM)</option>
+                            <option value="evening">Evening (6PM - 12AM)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit">🔍 Search Available Buses</button>
+            </form>
+        </section>
+
+        <!-- SEARCH RESULTS SECTION -->
+        <section id="results-section" class="card hidden">
+            <h2>Available Buses</h2>
+            <div id="bus-list" class="bus-list">
+                <p class="loading">Searching...</p>
+            </div>
+            <button onclick="resetSearch()" class="secondary-btn">← Modify Search</button>
+        </section>
+
+        <!-- BOOKING FORM SECTION -->
+        <section id="booking-section" class="card hidden">
+            <h2>Complete Your Booking</h2>
+            <div id="selected-bus-info" class="selected-bus-info"></div>
+            <form id="booking-form">
+                <input type="text" id="name" placeholder="Full Name" required>
+                <input type="email" id="email" placeholder="Email Address" required>
+                <input type="tel" id="phone" placeholder="Phone Number" required>
+                <input type="hidden" id="selected-bus-id">
+                <button type="submit">Generate Digital Pass</button>
+            </form>
+        </section>
+
+        <!-- TICKET SECTION -->
+        <section id="ticket-section" class="card hidden">
+            <h2>🎟️ Your Digital Bus Pass</h2>
+            <div class="ticket-details">
+                <p><strong>Ticket ID:</strong> <span id="res-id"></span></p>
+                <p><strong>Route:</strong> <span id="res-route"></span></p>
+                <p><strong>Price Paid:</strong> ₹<span id="res-price"></span></p>
+                <p><strong>Status:</strong> <span id="res-status" class="badge">ACTIVE</span></p>
+            </div>
+            <p class="warning">⚠️ Save this UUID. It is your only proof of purchase.</p>
+            <button onclick="location.reload()">Book Another</button>
+        </section>
+    </main>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
