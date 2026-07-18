@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexRoute — Provider / Admin Portal</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+</head>
+<body>
+
+<nav class="nav">
+    <a href="/" class="brand"
+        <span class="dot">◉</span>
+        <span>NexRoute<br><small>OPERATOR CONSOLE</small></span>
+    </a>
+    <div class="nav-links" id="nav-links">
+        <a href="/" class="nav-btn ghost">← Back to Traveller Site</a>
+    </div>
+</nav>
+
+<main>
+    <!-- ===== LOGIN GATE ===== -->
+    <div class="gate" id="gate">
+        <div class="eyebrow" style="text-align:center; color:var(--amber); font-family:var(--font-mono); letter-spacing:0.2em; font-size:0.72rem;">RESTRICTED ACCESS</div>
+        <h1 style="font-family:var(--font-display); text-align:center; font-size:1.6rem; margin:12px 0 24px;">Provider / Admin Console</h1>
+        <div class="card">
+            <form id="portal-login-form">
+                <input type="email" id="portal-email" placeholder="Email Address" required>
+                <div style="height:12px"></div>
+                <input type="password" id="portal-password" placeholder="Password" required>
+                <div class="form-error hidden" id="portal-login-error"></div>
+                <div style="height:16px"></div>
+                <button type="submit" class="cta full">Log In to Console</button>
+            </form>
+            <p style="color:var(--muted); font-size:0.8rem; margin-top:16px;">Not registered as a provider yet? <a href="/">Register on the main site</a> and choose "Provider" as account type.</p>
+            <p style="color:var(--muted); font-size:0.72rem; margin-top:10px; font-family:var(--font-mono);">Demo: admin@nexroute.in / admin123 · provider@nexroute.in / provider123</p>
+        </div>
+    </div>
+
+    <!-- ===== ADMIN DASHBOARD ===== -->
+    <div class="hidden" id="admin-dashboard">
+        <h1 style="font-family:var(--font-display); font-size:1.5rem;">Admin Control Tower</h1>
+        <div class="stat-grid" id="admin-stats"></div>
+
+        <section class="card">
+            <h2>Vehicles Pending Approval <span class="chip">ACTION NEEDED</span></h2>
+            <table id="pending-table"><thead><tr><th>Vehicle</th><th>Type</th><th>City</th><th>Rate</th><th>Action</th></tr></thead><tbody></tbody></table>
+        </section>
+
+        <section class="card">
+            <h2>All Listed Vehicles</h2>
+            <table id="all-vehicles-table"><thead><tr><th>Vehicle</th><th>Type</th><th>City</th><th>Status</th></tr></thead><tbody></tbody></table>
+        </section>
+
+        <section class="card">
+            <h2>Publish a New Bus Route</h2>
+            <form id="new-bus-form">
+                <div class="form-row">
+                    <div class="form-group"><label>Source</label><select id="nb-source"></select></div>
+                    <div class="form-group"><label>Destination</label><select id="nb-destination"></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Departure Date</label><input type="date" id="nb-date" required></div>
+                    <div class="form-group"><label>Departure Time</label><input type="time" id="nb-time" required></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Operator</label><input type="text" id="nb-operator" value="RailYatra Express"></div>
+                    <div class="form-group"><label>Bus Type</label>
+                        <select id="nb-bustype">
+                            <option>AC Sleeper</option><option>AC Seater</option><option>Non-AC Seater</option><option>Volvo Multi-Axle</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Base Price (₹)</label><input type="number" id="nb-price" min="0" required></div>
+                    <div class="form-group"><label>Total Seats</label><input type="number" id="nb-seats" min="1" value="40" required></div>
+                </div>
+                <div class="form-success hidden" id="nb-success"></div>
+                <button type="submit" class="cta">Publish Route</button>
+            </form>
+        </section>
+    </div>
+
+    <!-- ===== PROVIDER DASHBOARD ===== -->
+    <div class="hidden" id="provider-dashboard">
+        <h1 style="font-family:var(--font-display); font-size:1.5rem;">Provider Console</h1>
+        <p style="color:var(--muted)">List your tourist mini-buses and self-driving cars for hire across India.</p>
+
+        <section class="card">
+            <h2>List a New Vehicle</h2>
+            <form id="new-vehicle-form">
+                <div class="pill-toggle" id="nv-type-toggle">
+                    <button type="button" data-type="mini_bus" class="active">🚐 Tourist Mini Bus</button>
+                    <button type="button" data-type="self_driving_car">🚗 Self-Driving Car</button>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Vehicle Name</label><input type="text" id="nv-name" placeholder="e.g. Tempo Traveller 17-Seater" required></div>
+                    <div class="form-group"><label>Base City</label><select id="nv-city" required></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Seats</label><input type="number" id="nv-seats" min="1" value="5" required></div>
+                    <div class="form-group"><label>Price per km (₹)</label><input type="number" id="nv-perkm" min="1" step="0.5" required></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Local Package /day (₹, 80km/8hr)</label><input type="number" id="nv-perday" min="1" required></div>
+                    <div class="form-group" id="nv-driver-group"><label>Driver Allowance /day (₹)</label><input type="number" id="nv-driver" min="0" value="400"></div>
+                </div>
+                <div class="form-group"><label>Description</label><input type="text" id="nv-desc" placeholder="Short description for travellers"></div>
+                <div class="form-success hidden" id="nv-success"></div>
+                <button type="submit" class="cta">Submit for Approval</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>My Vehicles</h2>
+            <table id="my-vehicles-table"><thead><tr><th>Vehicle</th><th>Type</th><th>City</th><th>Status</th></tr></thead><tbody></tbody></table>
+        </section>
+
+        <section class="card">
+            <h2>Bookings on My Vehicles</h2>
+            <table id="my-bookings-table"><thead><tr><th>Route</th><th>Trip</th><th>Dates</th><th>Total</th></tr></thead><tbody></tbody></table>
+        </section>
+    </div>
+</main>
+
+<footer class="site-footer">NexRoute Operator Console · Server-verified pricing · Built for scale</footer>
+
+<script src="/static/admin.js"></script>
+</body>
+</html>

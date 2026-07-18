@@ -1,115 +1,270 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud Bus Pass System</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexRoute — Futuristic Indian Transit Network</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="/static/favicon.ico" type="image/x-icon">
 </head>
 <body>
-    <header>
-        <h1>🚌 Cloud Bus Pass</h1>
-        <p>Secure, Dynamic, and Loss-Proof Ticketing</p>
-    </header>
 
-    <main>
-        <!-- SEARCH FORM SECTION -->
-        <section id="search-section" class="card">
-            <h2>Search Buses</h2>
+<nav class="nav">
+    <a href="/" class="brand">
+        <span class="dot">◉</span>
+        <span>NexRoute<br><small>INDIA TRANSIT GRID</small></span>
+    </a>
+    <div class="nav-links" id="nav-links">
+        <a href="/admin" class="nav-btn ghost">Provider / Admin Portal →</a>
+        <button class="nav-btn" id="btn-login">Log In</button>
+        <button class="nav-btn primary" id="btn-register">Register</button>
+    </div>
+</nav>
+
+<main>
+    <section class="hero">
+        <div class="eyebrow">Cloud-native · Loss-proof · Real-time</div>
+        <h1>Book buses & hire rides<br>across <span>India</span>, on the grid.</h1>
+        <p>Cryptographic digital passes, server-verified pricing, and on-demand tourist mini-buses & self-driving cars — all in one console.</p>
+        <div class="ticker">
+            <div class="ticker-track" id="ticker-track"><span>Loading network…</span></div>
+        </div>
+    </section>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="bus-tab">🚌 Book Bus Tickets</button>
+        <button class="tab-btn" data-tab="hire-tab">🚐 Hire Mini Bus & Self-Driving Car</button>
+        <button class="tab-btn" data-tab="mine-tab">🎟️ My Bookings</button>
+    </div>
+
+    <!-- ===================== BUS TAB ===================== -->
+    <div class="tab-panel active" id="bus-tab">
+        <section class="card" id="search-section">
+            <h2>Search Buses <span class="chip">LIVE NETWORK</span></h2>
             <form id="search-form">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="source">From (Source):</label>
-                        <select id="source" required>
-                            <option value="">Select Source City</option>
-                            <!-- EDIT CITIES HERE -->
-                            <option value="New Delhi">New Delhi</option>
-                            <option value="Bombay">Bombay</option>
-                            <option value="Chictrakooth">Chictrakooth</option>
-                            <option value="Mathura">Mathura</option>
-                            <option value="Sitapur">Sitapur</option>
-                            <option value="Bariely">Bariely</option>
-                            <option value="Kanpur">Kanpur</option>
-                            <option value="Lucknow">Lucknow</option>
-                            <option value="jhansi">Jhansi</option>
-                        </select>
+                        <label for="source">From (Source)</label>
+                        <select id="source" required><option value="">Select Source City</option></select>
                     </div>
-
                     <div class="form-group">
-                        <label for="destination">To (Destination):</label>
-                        <select id="destination" required>
-                            <option value="">Select Destination City</option>
-                            <!-- EDIT CITIES HERE -->
-                        <option value="New Delhi">New Delhi</option>
-                            <option value="Bombay">Bombay</option>
-                            <option value="Chictrakooth">Chictrakooth</option>
-                            <option value="Mathura">Mathura</option>
-                            <option value="Sitapur">Sitapur</option>
-                            <option value="Bariely">Bariely</option>
-                            <option value="Kanpur">Kanpur</option>
-                            <option value="Lucknow">Lucknow</option>
-                            <option value="jhansi">Jhansi</option>
-                        </select>
+                        <label for="destination">To (Destination)</label>
+                        <select id="destination" required><option value="">Select Destination City</option></select>
                     </div>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="travel-date">Travel Date:</label>
+                        <label for="travel-date">Travel Date</label>
                         <input type="date" id="travel-date" required>
                     </div>
-
                     <div class="form-group">
-                        <label for="travel-time">Departure Time:</label>
-                        <select id="travel-time" required>
+                        <label for="travel-time">Departure Window</label>
+                        <select id="travel-time">
                             <option value="">Any Time</option>
-                            <option value="morning">Morning (6AM - 12PM)</option>
-                            <option value="afternoon">Afternoon (12PM - 6PM)</option>
-                            <option value="evening">Evening (6PM - 12AM)</option>
+                            <option value="morning">Morning (6AM – 12PM)</option>
+                            <option value="afternoon">Afternoon (12PM – 6PM)</option>
+                            <option value="evening">Evening (6PM – 12AM)</option>
                         </select>
                     </div>
                 </div>
-
-                <button type="submit">🔍 Search Available Buses</button>
+                <button type="submit" class="cta">🔍 Search Available Buses</button>
             </form>
         </section>
 
-        <!-- SEARCH RESULTS SECTION -->
         <section id="results-section" class="card hidden">
             <h2>Available Buses</h2>
-            <div id="bus-list" class="bus-list">
-                <p class="loading">Searching...</p>
+            <div class="board-header">
+                <span>Route / Operator</span><span>Date</span><span>Time</span><span>Seats</span><span>Fare</span>
             </div>
-            <button onclick="resetSearch()" class="secondary-btn">← Modify Search</button>
+            <div id="bus-list" class="bus-list"><p class="loading">Searching…</p></div>
+            <button onclick="resetSearch()" class="btn secondary" style="margin-top:16px;">← Modify Search</button>
         </section>
 
-        <!-- BOOKING FORM SECTION -->
         <section id="booking-section" class="card hidden">
             <h2>Complete Your Booking</h2>
             <div id="selected-bus-info" class="selected-bus-info"></div>
             <form id="booking-form">
                 <input type="text" id="name" placeholder="Full Name" required>
+                <div style="height:12px"></div>
                 <input type="email" id="email" placeholder="Email Address" required>
+                <div style="height:12px"></div>
                 <input type="tel" id="phone" placeholder="Phone Number" required>
                 <input type="hidden" id="selected-bus-id">
-                <button type="submit">Generate Digital Pass</button>
+                <div style="height:16px"></div>
+                <button type="submit" class="cta full">Generate Digital Pass</button>
             </form>
         </section>
 
-        <!-- TICKET SECTION -->
         <section id="ticket-section" class="card hidden">
             <h2>🎟️ Your Digital Bus Pass</h2>
-            <div class="ticket-details">
-                <p><strong>Ticket ID:</strong> <span id="res-id"></span></p>
-                <p><strong>Route:</strong> <span id="res-route"></span></p>
-                <p><strong>Price Paid:</strong> ₹<span id="res-price"></span></p>
-                <p><strong>Status:</strong> <span id="res-status" class="badge">ACTIVE</span></p>
+            <div class="ticket-pass">
+                <div class="ticket-main">
+                    <div class="route-big" id="res-route">—</div>
+                    <div class="ticket-details">
+                        <p>Ticket ID<b id="res-id" style="font-size:0.8rem;word-break:break-all;">—</b></p>
+                        <p>Price Paid<b id="res-price">—</b></p>
+                        <p>Status<b><span id="res-status" class="badge">ACTIVE</span></b></p>
+                    </div>
+                    <p class="warning">⚠️ Save this ID — it's your only proof of purchase.</p>
+                </div>
+                <div class="stub-divider"></div>
+                <div class="ticket-stub">
+                    <div class="barcode"></div>
+                    <span style="font-family:var(--font-mono); font-size:0.65rem; color:var(--muted);">BOARDING</span>
+                </div>
             </div>
-            <p class="warning">⚠️ Save this UUID. It is your only proof of purchase.</p>
-            <button onclick="location.reload()">Book Another</button>
+            <button onclick="location.reload()" class="btn secondary" style="margin-top:20px;">Book Another</button>
         </section>
-    </main>
+    </div>
 
-    <script src="script.js"></script>
+    <!-- ===================== HIRE TAB ===================== -->
+    <div class="tab-panel" id="hire-tab">
+        <section class="card">
+            <h2>Hire a Ride <span class="chip">INDIAN OUTSTATION RATES</span></h2>
+            <div class="pill-toggle" id="vehicle-type-toggle">
+                <button data-type="mini_bus" class="active">🚐 Tourist Mini Bus</button>
+                <button data-type="self_driving_car">🚗 Self-Driving Car</button>
+            </div>
+            <div class="pill-toggle" id="trip-type-toggle">
+                <button data-trip="local" class="active">📍 Local (within city)</button>
+                <button data-trip="outstation">🛣️ Outstation (city to city)</button>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="hire-pickup">Pickup City</label>
+                    <select id="hire-pickup"><option value="">Select City</option></select>
+                </div>
+                <div class="form-group" id="hire-drop-group">
+                    <label for="hire-drop">Drop City</label>
+                    <select id="hire-drop"><option value="">Select City</option></select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="hire-start">Start Date</label>
+                    <input type="date" id="hire-start">
+                </div>
+                <div class="form-group">
+                    <label for="hire-end">End Date</label>
+                    <input type="date" id="hire-end">
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Available Vehicles</h2>
+            <div id="vehicle-grid" class="vehicle-grid"><p class="loading">Loading fleet…</p></div>
+            <div id="quote-box" class="quote-box hidden"></div>
+            <button id="hire-confirm-btn" class="cta full hidden" style="margin-top:16px;">Confirm & Reserve</button>
+        </section>
+
+        <section id="hire-ticket-section" class="card hidden">
+            <h2>✅ Booking Confirmed</h2>
+            <div id="hire-ticket-body" style="font-family:var(--font-mono); font-size:0.95rem;"></div>
+        </section>
+    </div>
+
+    <!-- ===================== MY BOOKINGS TAB ===================== -->
+    <div class="tab-panel" id="mine-tab">
+        <section class="card" id="mine-locked">
+            <h2>My Bookings</h2>
+            <p style="color:var(--muted)">Log in to view your bus tickets and hire bookings.</p>
+            <button class="btn" id="mine-login-btn">Log In</button>
+        </section>
+        <section class="card hidden" id="mine-content">
+            <h2>🚌 Bus Tickets</h2>
+            <div id="mine-tickets"></div>
+        </section>
+        <section class="card hidden" id="mine-hire-content">
+            <h2>🚐 Hire Bookings</h2>
+            <div id="mine-hire"></div>
+        </section>
+    </div>
+</main>
+
+<footer class="site-footer">NexRoute — India Transit Grid · Server-verified pricing · Built for scale</footer>
+
+<!-- ===================== AUTH MODAL ===================== -->
+<div class="modal-overlay hidden" id="auth-modal">
+    <div class="modal-box">
+        <button class="modal-close" data-close="auth-modal">✕</button>
+        <div class="modal-tabs">
+            <button class="active" data-authtab="login">Log In</button>
+            <button data-authtab="register">Register</button>
+        </div>
+
+        <form id="login-form">
+            <h2>Welcome back</h2>
+            <input type="email" id="login-email" placeholder="Email Address" required>
+            <div style="height:12px"></div>
+            <input type="password" id="login-password" placeholder="Password" required>
+            <div class="form-error hidden" id="login-error"></div>
+            <div style="height:16px"></div>
+            <button type="submit" class="cta full">Log In</button>
+        </form>
+
+        <form id="register-form" class="hidden">
+            <h2>Create your account</h2>
+            <input type="text" id="reg-name" placeholder="Full Name" required>
+            <div style="height:12px"></div>
+            <input type="email" id="reg-email" placeholder="Email Address" required>
+            <div style="height:12px"></div>
+            <input type="tel" id="reg-phone" placeholder="Phone Number" required>
+            <div style="height:12px"></div>
+            <input type="password" id="reg-password" placeholder="Password" required minlength="6">
+            <div style="height:12px"></div>
+            <div class="form-group">
+                <label for="reg-role">Account Type</label>
+                <select id="reg-role">
+                    <option value="user">Traveller — book tickets & rides</option>
+                    <option value="provider">Provider — list mini-buses / cars for hire</option>
+                </select>
+            </div>
+            <div class="form-error hidden" id="register-error"></div>
+            <button type="submit" class="cta full">Create Account</button>
+        </form>
+    </div>
+</div>
+
+<!-- ===================== DEVELOPER MODAL ===================== -->
+<button class="dev-fab" id="dev-fab">👨‍💻 Developer</button>
+<div class="modal-overlay hidden" id="dev-modal">
+    <div class="modal-box dev-modal">
+        <button class="modal-close" data-close="dev-modal">✕</button>
+        <div class="dev-head">
+            <div class="dev-avatar">🧠</div>
+            <div>
+                <h2>Devesh Pratap</h2>
+                <div class="role">ML Engineer · Power BI Developer · Cloud Computing</div>
+            </div>
+        </div>
+        <p style="color:var(--muted); font-size:0.88rem;">B.Tech CSE (AI & ML), SRIMT Lucknow (AKTU). Built this transit platform's cloud architecture, pricing engine & UI.</p>
+        <div class="dev-links">
+            <a class="dev-link" href="https://deveshpratap.vercel.app" target="_blank" rel="noopener">
+                <span class="ico">🌐</span><span><span class="lbl">Portfolio</span><span class="val">deveshpratap.vercel.app</span></span>
+            </a>
+            <a class="dev-link" href="mailto:prd247757@gmail.com">
+                <span class="ico">✉️</span><span><span class="lbl">Email</span><span class="val">prd247757@gmail.com</span></span>
+            </a>
+            <a class="dev-link" href="tel:+917348247757">
+                <span class="ico">📞</span><span><span class="lbl">Phone</span><span class="val">+91 73482 47757</span></span>
+            </a>
+            <a class="dev-link" href="https://github.com/dvs2121" target="_blank" rel="noopener">
+                <span class="ico">🐙</span><span><span class="lbl">GitHub</span><span class="val">github.com/dvs2121</span></span>
+            </a>
+            <a class="dev-link" href="https://www.linkedin.com/in/devesh-prajapati-8b906b25a" target="_blank" rel="noopener">
+                <span class="ico">💼</span><span><span class="lbl">LinkedIn</span><span class="val">devesh-prajapati-8b906b25a</span></span>
+            </a>
+            <a class="dev-link" href="https://www.instagram.com/devesh.prajapati_2128" target="_blank" rel="noopener">
+                <span class="ico">📷</span><span><span class="lbl">Instagram</span><span class="val">@devesh.prajapati_2128</span></span>
+            </a>
+            <a class="dev-link" href="https://maps.google.com/?q=Lucknow,Uttar+Pradesh,India" target="_blank" rel="noopener">
+                <span class="ico">📍</span><span><span class="lbl">Location</span><span class="val">Lucknow, Uttar Pradesh, India</span></span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script src="/static/script.js"></script>
 </body>
 </html>
