@@ -159,6 +159,7 @@ function setupAuthModal() {
                     email: document.getElementById("reg-email").value,
                     phone: document.getElementById("reg-phone").value,
                     password: document.getElementById("reg-password").value,
+                    confirm_password: document.getElementById("reg-confirm-password").value,
                     role: document.getElementById("reg-role").value,
                 }),
             });
@@ -258,6 +259,7 @@ function selectBus(bus) {
 
 async function handleBooking(event) {
     event.preventDefault();
+    if (!state.user) { openAuthModal("login"); return; }
     const busId = document.getElementById("selected-bus-id").value;
     if (!busId) { alert("No bus selected!"); return; }
 
@@ -431,12 +433,30 @@ async function loadMyBookings() {
     hireContent.classList.remove("hidden");
 
     try {
-        const hireRes = await fetch(`${API_BASE}/vehicle-bookings/mine`, { headers: authHeaders() });
+        const [hireRes, ticketRes] = await Promise.all([
+            fetch(`${API_BASE}/vehicle-bookings/mine`, { headers: authHeaders() }),
+            fetch(`${API_BASE}/tickets/mine`, { headers: authHeaders() }),
+        ]);
         const hireBookings = hireRes.ok ? await hireRes.json() : [];
+        const tickets = ticketRes.ok ? await ticketRes.json() : [];
         document.getElementById("mine-hire").innerHTML = hireBookings.length
-            ? hireBookings.map(b => `<div class="selected-bus-info"><p>${b.pickup_city}${b.drop_city ? " → " + b.drop_city : " (local)"} · ₹${Number(b.total_price).toFixed(0)} · <span class="badge">${b.status}</span></p></div>`).join("")
+            ? hireBookings.map(b => `<div class="selected-bus-info"><p>${b.pickup_city}${b.drop_city ? " → " + b.drop_city : " (local)"} · ₹${Number(b.total_price).toFixed(0)} · <span class="badge">${b.status}</span></p>${["PENDING", "CONFIRMED", "ACCEPTED"].includes(b.status) ? `<button class="btn secondary cancel-hire" data-id="${b.id}">Cancel booking</button>` : ""}</div>`).join("")
             : '<p style="color:var(--muted)">No hire bookings yet.</p>';
 
-        document.getElementById("mine-tickets").innerHTML = '<p style="color:var(--muted)">Bus ticket history is shown right after booking — save your Ticket ID for future reference.</p>';
+        document.getElementById("mine-tickets").innerHTML = tickets.length
+            ? tickets.map(ticket => `<div class="selected-bus-info"><p><strong>${ticket.passenger_name}</strong> · ${ticket.status}</p><p>Ticket ID: ${ticket.id}</p><p>Bus: ${ticket.bus_id} · ₹${Number(ticket.final_price).toFixed(0)}</p>${ticket.status === "ACTIVE" ? `<button class="btn secondary cancel-ticket" data-id="${ticket.id}">Cancel ticket</button>` : ""}</div>`).join("")
+            : '<p style="color:var(--muted)">No bus tickets yet.</p>';
+        document.querySelectorAll(".cancel-hire").forEach(button => button.addEventListener("click", async () => {
+            if (!window.confirm("Cancel this hire booking?")) return;
+            const response = await fetch(`${API_BASE}/vehicle-bookings/${button.dataset.id}/cancel`, { method: "PATCH", headers: authHeaders() });
+            if (!response.ok) { window.alert("The booking could not be cancelled."); return; }
+            loadMyBookings();
+        }));
+        document.querySelectorAll(".cancel-ticket").forEach(button => button.addEventListener("click", async () => {
+            if (!window.confirm("Cancel this bus ticket?")) return;
+            const response = await fetch(`${API_BASE}/tickets/${button.dataset.id}/cancel`, { method: "PATCH", headers: authHeaders() });
+            if (!response.ok) { window.alert("The ticket could not be cancelled."); return; }
+            loadMyBookings();
+        }));
     } catch { /* silent */ }
 }

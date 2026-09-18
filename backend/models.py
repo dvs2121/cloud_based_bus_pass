@@ -30,6 +30,7 @@ class AuthToken(Base):
     token = Column(String, primary_key=True, default=gen_uuid)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, server_default=func.now())
+    expires_at = Column(DateTime, nullable=False)
 
 
 class Bus(Base):

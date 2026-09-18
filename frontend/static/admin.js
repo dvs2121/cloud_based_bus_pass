@@ -89,6 +89,8 @@ async function initAdminDashboard() {
     await refreshAdminStats();
     await refreshPendingVehicles();
     await refreshAllVehicles();
+    await refreshAdminUsers();
+    await refreshAdminBookings();
     document.getElementById("new-bus-form").addEventListener("submit", handleNewBus);
 }
 
@@ -147,6 +149,40 @@ async function refreshAllVehicles() {
         `;
         body.appendChild(tr);
     });
+}
+
+async function refreshAdminUsers() {
+    const res = await fetch(`${API_BASE}/admin/users`, { headers: authHeaders() });
+    if (!res.ok) return;
+    const users = await res.json();
+    const body = document.querySelector("#users-table tbody");
+    body.innerHTML = users.length ? "" : `<tr><td colspan="4" style="color:var(--muted)">No users yet.</td></tr>`;
+    users.forEach(user => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${user.name}</td><td>${user.email}</td><td>${user.role}</td><td>${user.role === "provider" ? (user.is_approved_provider ? "approved" : "pending") : "—"}</td>`;
+        body.appendChild(tr);
+    });
+}
+
+async function refreshAdminBookings() {
+    const res = await fetch(`${API_BASE}/admin/bookings`, { headers: authHeaders() });
+    if (!res.ok) return;
+    const data = await res.json();
+    const body = document.querySelector("#admin-bookings-table tbody");
+    const bookings = data.hire_bookings || [];
+    body.innerHTML = bookings.length ? "" : `<tr><td colspan="5" style="color:var(--muted)">No hire bookings yet.</td></tr>`;
+    bookings.forEach(booking => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${booking.pickup_city}${booking.drop_city ? " → " + booking.drop_city : " (local)"}</td><td>${booking.start_date} → ${booking.end_date}</td><td>₹${Number(booking.total_price).toFixed(0)}</td><td><span class="status-pill ${booking.status.toLowerCase()}">${booking.status}</span></td><td><select data-booking-id="${booking.id}" class="booking-status"><option value="">Update</option><option value="ACCEPTED">Accept</option><option value="REJECTED">Reject</option><option value="COMPLETED">Complete</option><option value="CANCELLED">Cancel</option></select></td>`;
+        body.appendChild(tr);
+    });
+    body.querySelectorAll(".booking-status").forEach(select => select.addEventListener("change", async () => {
+        if (!select.value) return;
+        const response = await fetch(`${API_BASE}/admin/bookings/${select.dataset.bookingId}/status`, {
+            method: "PATCH", headers: authHeaders(), body: JSON.stringify({ status: select.value }),
+        });
+        if (response.ok) await refreshAdminBookings();
+    }));
 }
 
 async function handleNewBus(e) {
@@ -239,7 +275,15 @@ async function refreshMyBookings() {
             <td>${b.trip_type}</td>
             <td>${b.start_date} → ${b.end_date}</td>
             <td>₹${Number(b.total_price).toFixed(0)}</td>
+            <td><select data-booking-id="${b.id}" class="booking-status"><option value="">Update</option><option value="ACCEPTED">Accept</option><option value="REJECTED">Reject</option><option value="COMPLETED">Complete</option></select></td>
         `;
         body.appendChild(tr);
     });
+    body.querySelectorAll(".booking-status").forEach(select => select.addEventListener("change", async () => {
+        if (!select.value) return;
+        const response = await fetch(`${API_BASE}/provider/bookings/${select.dataset.bookingId}/status`, {
+            method: "PATCH", headers: authHeaders(), body: JSON.stringify({ status: select.value }),
+        });
+        if (response.ok) await refreshMyBookings();
+    }));
 }

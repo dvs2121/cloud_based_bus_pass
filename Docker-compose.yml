@@ -4,9 +4,11 @@ services:
   app:
     build: .
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:${PORT:-8000}"
     environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/buspass
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:password@db:5432/buspass}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:8000}
+      - SESSION_TTL_HOURS=${SESSION_TTL_HOURS:-24}
     depends_on:
       - db
     volumes:
@@ -16,11 +18,11 @@ services:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: buspass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-buspass}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./schema.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/schema.sql:/docker-entrypoint-initdb.d/init.sql
 
 volumes:
   postgres_data:

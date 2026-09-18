@@ -14,7 +14,8 @@ CREATE TABLE users (
 CREATE TABLE auth_tokens (
     token UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL
 );
 
 CREATE TABLE buses (

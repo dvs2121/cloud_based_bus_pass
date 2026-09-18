@@ -1,8 +1,9 @@
+import os
 from datetime import date, time, timedelta
 
-from main import engine, SessionLocal, hash_password
-from models import Base, Bus, User, Vehicle
-from india_data import BUS_ROUTES, get_distance
+from backend.main import engine, SessionLocal, hash_password
+from backend.models import Base, Bus, User, Vehicle
+from backend.india_data import BUS_ROUTES, get_distance
 
 Base.metadata.create_all(bind=engine)
 
@@ -12,13 +13,20 @@ db.query(Vehicle).delete()
 db.query(User).delete()
 db.commit()
 
-# --- Demo accounts -----------------------------------------------------
-admin = User(name="NexRoute Admin", email="admin@nexroute.in", phone="9999900000",
-             password_hash=hash_password("admin123"), role="admin", is_approved_provider=True)
+# --- Local bootstrap accounts ------------------------------------------
+admin_email = os.getenv("ADMIN_EMAIL")
+admin_password = os.getenv("ADMIN_PASSWORD")
+provider_password = os.getenv("PROVIDER_PASSWORD")
+seed_user_password = os.getenv("SEED_USER_PASSWORD")
+if not all((admin_email, admin_password, provider_password, seed_user_password)):
+                raise RuntimeError("ADMIN_EMAIL, ADMIN_PASSWORD, PROVIDER_PASSWORD, and SEED_USER_PASSWORD are required to seed")
+
+admin = User(name="NexRoute Admin", email=admin_email, phone="9999900000",
+                                                 password_hash=hash_password(admin_password), role="admin", is_approved_provider=True)
 provider = User(name="Ganga Travels", email="provider@nexroute.in", phone="9999900001",
-                password_hash=hash_password("provider123"), role="provider", is_approved_provider=True)
+                                                                password_hash=hash_password(provider_password), role="provider", is_approved_provider=True)
 traveller = User(name="Aarav Sharma", email="user@nexroute.in", phone="9999900002",
-                  password_hash=hash_password("user123"), role="user")
+                                                                        password_hash=hash_password(seed_user_password), role="user")
 
 db.add_all([admin, provider, traveller])
 db.commit()
@@ -31,7 +39,7 @@ OPERATORS = ["RailYatra Express", "Shivshahi Volvo", "Ganga Travels", "IntrCity 
 BUS_TYPES = ["AC Sleeper", "AC Seater", "Non-AC Seater", "Volvo Multi-Axle"]
 DEPARTURES = [time(6, 30), time(9, 0), time(13, 15), time(17, 45), time(21, 30), time(23, 0)]
 
-base_date = date(2026, 8, 1)
+base_date = date.today() + timedelta(days=2)
 buses = []
 for i, (source, destination) in enumerate(BUS_ROUTES):
     dist = get_distance(source, destination) or 300
@@ -92,8 +100,6 @@ db.add_all(vehicles)
 db.commit()
 db.close()
 
-print("✅ Seeded NexRoute: buses across", len(BUS_ROUTES), "Indian corridors,",
-      len(vehicles), "hire vehicles, and 3 demo accounts.")
-print("   Admin login:    admin@nexroute.in / admin123")
-print("   Provider login: provider@nexroute.in / provider123")
-print("   User login:     user@nexroute.in / user123")
+print("Seeded NexRoute: buses across", len(BUS_ROUTES), "Indian corridors,",
+        len(vehicles), "hire vehicles, and bootstrap accounts.")
+print("Admin email:", admin_email)

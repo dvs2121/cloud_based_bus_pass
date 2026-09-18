@@ -2,7 +2,7 @@ import os
 import hashlib
 import hmac
 import secrets
-from datetime import datetime, time, date
+from datetime import datetime, time, date, timedelta, timezone
 from pathlib import Path
 from typing import Optional, List
 
@@ -10,20 +10,26 @@ from fastapi import FastAPI, HTTPException, Depends, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from sqlalchemy import create_engine, and_
+from dotenv import load_dotenv
+from sqlalchemy import create_engine, and_, inspect, text
 from sqlalchemy.orm import sessionmaker, Session
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
-from models import Base, User, AuthToken, Bus, Ticket, Vehicle, VehicleBooking
-from india_data import (
+from backend.models import Base, User, AuthToken, Bus, Ticket, Vehicle, VehicleBooking
+from backend.india_data import (
     CITIES, BUS_ROUTES, get_distance, estimate_distance, calculate_hire_price,
 )
 
 # --- PATH CONFIGURATION ---
 BASE_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = BASE_DIR.parent
+FRONTEND_DIR = PROJECT_DIR / "frontend"
+load_dotenv(PROJECT_DIR / ".env")
 
 # --- DATABASE SETUP ---
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./local_dev.db")
+TOKEN_TTL_HOURS = int(os.getenv("SESSION_TTL_HOURS", "24"))
+allowed_origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()]
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
@@ -31,12 +37,19 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base.metadata.create_all(bind=engine)
 
+# Keep the development database usable after adding session expiry to an
+# existing checkout. Fresh databases use the non-null model definition.
+if "expires_at" not in {column["name"] for column in inspect(engine).get_columns("auth_tokens")}:
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE auth_tokens ADD COLUMN expires_at DATETIME"))
+        connection.execute(text("UPDATE auth_tokens SET expires_at = CURRENT_TIMESTAMP"))
+
 app = FastAPI(title="NexRoute — Futuristic Indian Transit Network")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=allowed_origins or ["*"],
+    allow_credentials=bool(allowed_origins),
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -73,7 +86,10 @@ def get_current_user(authorization: Optional[str] = Header(None), db: Session = 
         raise HTTPException(status_code=401, detail="Not authenticated")
     token = authorization.split(" ", 1)[1]
     row = db.query(AuthToken).filter(AuthToken.token == token).first()
-    if not row:
+    if not row or not row.expires_at or row.expires_at <= datetime.now(timezone.utc).replace(tzinfo=None):
+        if row:
+            db.delete(row)
+            db.commit()
         raise HTTPException(status_code=401, detail="Invalid or expired session")
     user = db.query(User).filter(User.id == row.user_id).first()
     if not user:
@@ -93,22 +109,23 @@ def require_role(*roles):
 # Schemas
 # ---------------------------------------------------------------------------
 class RegisterRequest(BaseModel):
-    name: str
+    name: str = Field(min_length=2, max_length=100)
     email: EmailStr
-    phone: str
-    password: str
-    role: str = "user"  # "user" or "provider"
+    phone: str = Field(pattern=r"^\+?[0-9][0-9 ()-]{8,19}$")
+    password: str = Field(min_length=8, max_length=128)
+    confirm_password: str = Field(min_length=8, max_length=128)
+    role: str = Field(default="user", pattern=r"^(user|provider)$")
 
 
 class LoginRequest(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=1, max_length=128)
 
 
 class BookingRequest(BaseModel):
-    passenger_name: str
+    passenger_name: str = Field(min_length=2, max_length=100)
     passenger_email: EmailStr
-    passenger_phone: str
+    passenger_phone: str = Field(pattern=r"^\+?[0-9][0-9 ()-]{8,19}$")
     bus_id: int
 
 
@@ -121,12 +138,12 @@ class TicketResponse(BaseModel):
 
 class VehicleCreateRequest(BaseModel):
     type: str  # mini_bus / self_driving_car
-    name: str
+    name: str = Field(min_length=2, max_length=120)
     base_city: str
-    seats: int
-    price_per_km: float
-    price_per_day_local: float
-    driver_allowance_per_day: float = 0
+    seats: int = Field(gt=0, le=100)
+    price_per_km: float = Field(gt=0)
+    price_per_day_local: float = Field(gt=0)
+    driver_allowance_per_day: float = Field(default=0, ge=0)
     description: str = ""
     emoji: str = "🚐"
 
@@ -136,7 +153,7 @@ class QuoteRequest(BaseModel):
     trip_type: str  # local / outstation
     pickup_city: str
     drop_city: Optional[str] = None
-    days: int = 1
+    days: int = Field(default=1, ge=1, le=60)
 
 
 class HireBookingRequest(BaseModel):
@@ -148,17 +165,43 @@ class HireBookingRequest(BaseModel):
     end_date: date
 
 
+class ProfileUpdateRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+    phone: str = Field(pattern=r"^\+?[0-9][0-9 ()-]{8,19}$")
+
+
+class BookingStatusRequest(BaseModel):
+    status: str = Field(pattern=r"^(PENDING|CONFIRMED|ACCEPTED|REJECTED|CANCELLED|COMPLETED)$")
+
+
+def new_token(user_id: int) -> AuthToken:
+    return AuthToken(
+        user_id=user_id,
+        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=TOKEN_TTL_HOURS),
+    )
+
+
+def validate_city_pair(source: str, destination: Optional[str] = None):
+    if source not in CITIES:
+        raise HTTPException(status_code=400, detail="Unrecognized pickup/source city")
+    if destination is not None:
+        if destination not in CITIES:
+            raise HTTPException(status_code=400, detail="Unrecognized drop/destination city")
+        if source == destination:
+            raise HTTPException(status_code=400, detail="Source and destination must be different")
+
+
 # ---------------------------------------------------------------------------
 # Frontend
 # ---------------------------------------------------------------------------
 @app.get("/")
 def serve_frontend():
-    return FileResponse(BASE_DIR / "index.html")
+    return FileResponse(FRONTEND_DIR / "index.html")
 
 
 @app.get("/admin")
 def serve_admin():
-    return FileResponse(BASE_DIR / "admin.html")
+    return FileResponse(FRONTEND_DIR / "admin.html")
 
 
 @app.get("/api/cities")
@@ -175,6 +218,8 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Role must be 'user' or 'provider'")
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="An account with this email already exists")
+    if payload.password != payload.confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
 
     user = User(
         name=payload.name,
@@ -188,7 +233,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    token = AuthToken(user_id=user.id)
+    token = new_token(user.id)
     db.add(token)
     db.commit()
 
@@ -204,7 +249,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    token = AuthToken(user_id=user.id)
+    token = new_token(user.id)
     db.add(token)
     db.commit()
 
@@ -229,6 +274,21 @@ def me(user: User = Depends(get_current_user)):
             "is_approved_provider": user.is_approved_provider}
 
 
+@app.get("/api/profile")
+def profile(user: User = Depends(get_current_user)):
+    return {"id": user.id, "name": user.name, "email": user.email, "phone": user.phone, "role": user.role}
+
+
+@app.put("/api/profile")
+def update_profile(payload: ProfileUpdateRequest, db: Session = Depends(get_db),
+                   user: User = Depends(get_current_user)):
+    user.name = payload.name.strip()
+    user.phone = payload.phone.strip()
+    db.commit()
+    db.refresh(user)
+    return profile(user)
+
+
 # ---------------------------------------------------------------------------
 # Bus search & booking
 # ---------------------------------------------------------------------------
@@ -236,14 +296,18 @@ def me(user: User = Depends(get_current_user)):
 def search_buses(
     source: str = Query(...),
     destination: str = Query(...),
-    date: str = Query(...),
+    travel_date_value: str = Query(..., alias="date"),
     time_period: str = Query(None),
     db: Session = Depends(get_db),
 ):
+    validate_city_pair(source, destination)
     try:
-        travel_date = datetime.strptime(date, "%Y-%m-%d").date()
+        travel_date = datetime.strptime(travel_date_value, "%Y-%m-%d").date()
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format")
+
+    if travel_date < date.today():
+        raise HTTPException(status_code=400, detail="Travel date cannot be in the past")
 
     query = db.query(Bus).filter(
         and_(
@@ -272,24 +336,17 @@ def get_buses(db: Session = Depends(get_db)):
 
 @app.post("/api/book", response_model=TicketResponse)
 def book_ticket(booking: BookingRequest, db: Session = Depends(get_db),
-                 authorization: Optional[str] = Header(None)):
+                 user: User = Depends(get_current_user)):
     bus = db.query(Bus).filter(Bus.id == booking.bus_id).first()
     if not bus:
         raise HTTPException(status_code=404, detail="Bus not found")
     if bus.available_seats <= 0:
         raise HTTPException(status_code=400, detail="No seats available")
 
-    user_id = None
-    if authorization and authorization.startswith("Bearer "):
-        token = authorization.split(" ", 1)[1]
-        row = db.query(AuthToken).filter(AuthToken.token == token).first()
-        if row:
-            user_id = row.user_id
-
     final_price = float(bus.base_price)
 
     ticket = Ticket(
-        user_id=user_id,
+        user_id=user.id,
         bus_id=bus.id,
         passenger_name=booking.passenger_name,
         passenger_email=booking.passenger_email,
@@ -320,6 +377,26 @@ def verify_ticket(ticket_id: str, db: Session = Depends(get_db)):
     return {"ticket_id": ticket.id, "status": ticket.status, "valid": ticket.status == "ACTIVE"}
 
 
+@app.get("/api/tickets/mine")
+def my_tickets(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    return db.query(Ticket).filter(Ticket.user_id == user.id).order_by(Ticket.booked_at.desc()).all()
+
+
+@app.patch("/api/tickets/{ticket_id}/cancel")
+def cancel_ticket(ticket_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id, Ticket.user_id == user.id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    if ticket.status != "ACTIVE":
+        raise HTTPException(status_code=400, detail="Ticket cannot be cancelled")
+    bus = db.query(Bus).filter(Bus.id == ticket.bus_id).first()
+    ticket.status = "CANCELLED"
+    if bus:
+        bus.available_seats = min(bus.total_seats, bus.available_seats + 1)
+    db.commit()
+    return {"ok": True, "status": ticket.status}
+
+
 # ---------------------------------------------------------------------------
 # Vehicle hire — mini buses & self-driving cars
 # ---------------------------------------------------------------------------
@@ -338,6 +415,10 @@ def quote_vehicle(payload: QuoteRequest, db: Session = Depends(get_db)):
     vehicle = db.query(Vehicle).filter(Vehicle.id == payload.vehicle_id, Vehicle.status == "approved").first()
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found")
+
+    validate_city_pair(payload.pickup_city, payload.drop_city if payload.trip_type == "outstation" else None)
+    if payload.trip_type not in ("local", "outstation"):
+        raise HTTPException(status_code=400, detail="trip_type must be 'local' or 'outstation'")
 
     distance_km = 0
     if payload.trip_type == "outstation":
@@ -360,9 +441,25 @@ def quote_vehicle(payload: QuoteRequest, db: Session = Depends(get_db)):
 @app.post("/api/vehicle-bookings")
 def create_vehicle_booking(payload: HireBookingRequest, db: Session = Depends(get_db),
                             user: User = Depends(get_current_user)):
+    if payload.trip_type not in ("local", "outstation"):
+        raise HTTPException(status_code=400, detail="trip_type must be 'local' or 'outstation'")
+    if payload.start_date < date.today():
+        raise HTTPException(status_code=400, detail="Booking date cannot be in the past")
+    if payload.end_date < payload.start_date:
+        raise HTTPException(status_code=400, detail="End date must be on or after start date")
+    validate_city_pair(payload.pickup_city, payload.drop_city if payload.trip_type == "outstation" else None)
     vehicle = db.query(Vehicle).filter(Vehicle.id == payload.vehicle_id, Vehicle.status == "approved").first()
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found")
+
+    conflict = db.query(VehicleBooking).filter(
+        VehicleBooking.vehicle_id == vehicle.id,
+        VehicleBooking.status.in_(["PENDING", "CONFIRMED", "ACCEPTED"]),
+        VehicleBooking.start_date <= payload.end_date,
+        VehicleBooking.end_date >= payload.start_date,
+    ).first()
+    if conflict:
+        raise HTTPException(status_code=409, detail="Vehicle is unavailable for the selected dates")
 
     days = max(1, (payload.end_date - payload.start_date).days + 1)
     distance_km = 0
@@ -409,6 +506,20 @@ def my_hire_bookings(db: Session = Depends(get_db), user: User = Depends(get_cur
     return db.query(VehicleBooking).filter(VehicleBooking.user_id == user.id).all()
 
 
+@app.patch("/api/vehicle-bookings/{booking_id}/cancel")
+def cancel_vehicle_booking(booking_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    booking = db.query(VehicleBooking).filter(
+        VehicleBooking.id == booking_id, VehicleBooking.user_id == user.id
+    ).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    if booking.status not in ("PENDING", "CONFIRMED", "ACCEPTED"):
+        raise HTTPException(status_code=400, detail="Booking cannot be cancelled")
+    booking.status = "CANCELLED"
+    db.commit()
+    return {"ok": True, "status": booking.status}
+
+
 # ---------------------------------------------------------------------------
 # Provider portal
 # ---------------------------------------------------------------------------
@@ -450,6 +561,24 @@ def provider_bookings(db: Session = Depends(get_db), user: User = Depends(requir
     if not vehicle_ids:
         return []
     return db.query(VehicleBooking).filter(VehicleBooking.vehicle_id.in_(vehicle_ids)).all()
+
+
+@app.patch("/api/provider/bookings/{booking_id}/status")
+def provider_update_booking_status(booking_id: str, payload: BookingStatusRequest,
+                                   db: Session = Depends(get_db),
+                                   user: User = Depends(require_role("provider", "admin"))):
+    booking = db.query(VehicleBooking).filter(VehicleBooking.id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    owns_vehicle = db.query(Vehicle).filter(Vehicle.id == booking.vehicle_id, Vehicle.provider_id == user.id).first()
+    if user.role != "admin" and not owns_vehicle:
+        raise HTTPException(status_code=403, detail="You don't manage this booking")
+    if payload.status not in ("ACCEPTED", "REJECTED", "COMPLETED", "CANCELLED"):
+        raise HTTPException(status_code=400, detail="Provider cannot set that status")
+    booking.status = payload.status
+    db.commit()
+    db.refresh(booking)
+    return booking
 
 
 # ---------------------------------------------------------------------------
@@ -507,6 +636,23 @@ def admin_bookings(db: Session = Depends(get_db), user: User = Depends(require_r
     }
 
 
+@app.get("/api/admin/users")
+def admin_users(db: Session = Depends(get_db), user: User = Depends(require_role("admin"))):
+    return db.query(User).order_by(User.created_at.desc()).all()
+
+
+@app.patch("/api/admin/bookings/{booking_id}/status")
+def admin_update_booking_status(booking_id: str, payload: BookingStatusRequest,
+                                db: Session = Depends(get_db), user: User = Depends(require_role("admin"))):
+    booking = db.query(VehicleBooking).filter(VehicleBooking.id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Hire booking not found")
+    booking.status = payload.status
+    db.commit()
+    db.refresh(booking)
+    return booking
+
+
 class BusCreateRequest(BaseModel):
     operator_name: str = "RailYatra Express"
     bus_type: str = "AC Sleeper"
@@ -542,4 +688,4 @@ def admin_create_bus(payload: BusCreateRequest, db: Session = Depends(get_db),
     db.refresh(bus)
     return bus
 
-app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR / "static"), name="static")

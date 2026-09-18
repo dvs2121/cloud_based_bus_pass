@@ -10,7 +10,7 @@
 <body>
 
 <nav class="nav">
-    <a href="/" class="brand"
+    <a href="/" class="brand">
         <span class="dot">◉</span>
         <span>NexRoute<br><small>OPERATOR CONSOLE</small></span>
     </a>
@@ -34,7 +34,6 @@
                 <button type="submit" class="cta full">Log In to Console</button>
             </form>
             <p style="color:var(--muted); font-size:0.8rem; margin-top:16px;">Not registered as a provider yet? <a href="/">Register on the main site</a> and choose "Provider" as account type.</p>
-            <p style="color:var(--muted); font-size:0.72rem; margin-top:10px; font-family:var(--font-mono);">Demo: admin@nexroute.in / admin123 · provider@nexroute.in / provider123</p>
         </div>
     </div>
 
@@ -51,6 +50,16 @@
         <section class="card">
             <h2>All Listed Vehicles</h2>
             <table id="all-vehicles-table"><thead><tr><th>Vehicle</th><th>Type</th><th>City</th><th>Status</th></tr></thead><tbody></tbody></table>
+        </section>
+
+        <section class="card">
+            <h2>Users and Providers</h2>
+            <table id="users-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Provider Approval</th></tr></thead><tbody></tbody></table>
+        </section>
+
+        <section class="card">
+            <h2>Hire Bookings</h2>
+            <table id="admin-bookings-table"><thead><tr><th>Route</th><th>Dates</th><th>Total</th><th>Status</th><th>Action</th></tr></thead><tbody></tbody></table>
         </section>
 
         <section class="card">
@@ -119,7 +128,7 @@
 
         <section class="card">
             <h2>Bookings on My Vehicles</h2>
-            <table id="my-bookings-table"><thead><tr><th>Route</th><th>Trip</th><th>Dates</th><th>Total</th></tr></thead><tbody></tbody></table>
+            <table id="my-bookings-table"><thead><tr><th>Route</th><th>Trip</th><th>Dates</th><th>Total</th><th>Action</th></tr></thead><tbody></tbody></table>
         </section>
     </div>
 </main>

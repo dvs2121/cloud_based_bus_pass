@@ -92,25 +92,25 @@ DevOps
 
 Project Architecture
 
-main.py          REST API endpoints and application configuration
-models.py        SQLAlchemy database models
-india_data.py    City database, routes, pricing engine
-seed.py          Demo data generation
-schema.sql       PostgreSQL schema
-index.html       Traveller application
-admin.html       Provider/Admin dashboard
-style.css        Shared UI styling
-script.js        Traveller frontend logic
-admin.js         Admin dashboard functionality
+backend/         FastAPI app, models, seed script, schema, dependencies
+frontend/        Traveller/admin HTML and shared static assets
+Dockerfile       Production container entrypoint
+Docker-compose.yml  Local PostgreSQL deployment
 
 ⸻
 
 Installation
 
+Before starting locally, copy `.env.example` to `.env` and replace every
+`replace-with-a-strong-password` value. The `.env` file is ignored by Git.
+The seed command requires `ADMIN_EMAIL`, `ADMIN_PASSWORD`,
+`PROVIDER_PASSWORD`, and `SEED_USER_PASSWORD`; all seeded passwords are
+hashed before persistence.
+
 Using Docker
 
 docker-compose up --build
-docker-compose exec app python seed.py
+docker-compose exec app python -m backend.seed
 
 Open:
 
@@ -121,19 +121,16 @@ Open:
 
 Local Development
 
-pip install -r requirements.txt
-python seed.py
-uvicorn main:app --reload
+pip install -r backend/requirements.txt
+python -m backend.seed
+uvicorn backend.main:app --reload
 
 ⸻
 
-Demo Accounts
+Bootstrap Accounts
 
-The seed script creates sample accounts for:
-
-* Administrator
-* Provider
-* Traveller
+The seed script creates one administrator, provider, and traveller account
+using the credentials configured in `.env`. It does not print passwords.
 
 ⸻
 

@@ -32,11 +32,30 @@ wheels/
 # Environment
 .env
 .env.local
+.env.*
+!.env.example
 
 # Database
 *.db
 *.sqlite3
+*.sqlite
+backend/*.db
+backend/*.sqlite3
+
+# Test and coverage output
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Logs and local tooling
+*.log
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Frontend tooling, if added later
+node_modules/
+dist/
+out/
