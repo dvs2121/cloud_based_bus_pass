@@ -109,8 +109,8 @@ hashed before persistence.
 
 Using Docker
 
-docker-compose up --build
-docker-compose exec app python -m backend.seed
+docker compose -f Docker-compose.yml up --build
+docker compose -f Docker-compose.yml exec app python -m backend.seed
 
 Open:
 
