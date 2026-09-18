@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NexRoute — Futuristic Indian Transit Network</title>
+<title>NexRoute — Book India, Better</title>
 <link rel="stylesheet" href="/static/style.css">
 <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
 </head>
@@ -23,11 +23,43 @@
 
 <main>
     <section class="hero">
-        <div class="eyebrow">Cloud-native · Loss-proof · Real-time</div>
-        <h1>Book buses & hire rides<br>across <span>India</span>, on the grid.</h1>
-        <p>Cryptographic digital passes, server-verified pricing, and on-demand tourist mini-buses & self-driving cars — all in one console.</p>
+        <div class="hero-copy">
+            <div class="eyebrow"><span class="eyebrow-mark"></span> India&apos;s connected travel desk</div>
+            <h1>Move through India<br><span>with confidence.</span></h1>
+            <p>Compare verified bus routes, reserve a vehicle for the day, and keep every journey in one secure digital pass.</p>
+            <div class="hero-actions">
+                <button class="cta" onclick="document.getElementById('search-section').scrollIntoView({behavior:'smooth'})">Find a bus <span>↗</span></button>
+                <button class="hero-link" onclick="document.querySelector('[data-tab=hire-tab]').click(); document.getElementById('hire-tab').scrollIntoView({behavior:'smooth'})">Explore vehicle hire <span>→</span></button>
+            </div>
+            <div class="hero-proof"><span class="proof-dot"></span> Live availability across 29 Indian cities</div>
+        </div>
+        <div class="hero-panel" aria-label="NexRoute service overview">
+            <div class="hero-panel-top"><span>NETWORK STATUS</span><strong><i></i> OPERATIONAL</strong></div>
+            <div class="route-preview">
+                <div><small>FROM</small><strong>DEL</strong><span>New Delhi</span></div>
+                <div class="route-line"><b></b><span>✈</span><b></b></div>
+                <div><small>TO</small><strong>AGR</strong><span>Agra</span></div>
+            </div>
+            <div class="hero-stats">
+                <div><strong>29</strong><span>cities connected</span></div>
+                <div><strong>24/7</strong><span>digital access</span></div>
+                <div><strong>1</strong><span>secure pass</span></div>
+            </div>
+        </div>
         <div class="ticker">
             <div class="ticker-track" id="ticker-track"><span>Loading network…</span></div>
+        </div>
+    </section>
+
+    <section class="developer-banner" aria-label="About the developer">
+        <div class="developer-mark">DP</div>
+        <div class="developer-intro"><span>BUILT BY</span><strong>Devesh Pratap</strong><p>AI/ML Engineer &amp; Data Analyst</p></div>
+        <div class="developer-note">A practical cloud-based ticketing experience, designed around reliable data and simpler travel.</div>
+        <div class="developer-socials">
+            <a href="https://deveshpratap.vercel.app" target="_blank" rel="noopener" aria-label="Open Devesh's portfolio">Portfolio <span>↗</span></a>
+            <a href="https://github.com/dvs2121" target="_blank" rel="noopener" aria-label="Open Devesh's GitHub">GitHub <span>↗</span></a>
+            <a href="https://www.linkedin.com/in/devesh-prajapati-8b906b25a" target="_blank" rel="noopener" aria-label="Open Devesh's LinkedIn">LinkedIn <span>↗</span></a>
+            <a href="mailto:deveshpratap7757@gmail.com" aria-label="Email Devesh">Email <span>↗</span></a>
         </div>
     </section>
 
@@ -182,7 +214,7 @@
     </div>
 </main>
 
-<footer class="site-footer">NexRoute — India Transit Grid · Server-verified pricing · Built for scale</footer>
+<footer class="site-footer"><span>NEXROUTE</span><span>India transit, made clearer.</span><span>Built by <a href="https://deveshpratap.vercel.app" target="_blank" rel="noopener">Devesh Pratap</a></span></footer>
 
 <!-- ===================== AUTH MODAL ===================== -->
 <div class="modal-overlay hidden" id="auth-modal">
@@ -238,16 +270,13 @@
                 <div class="role">ML Engineer · Power BI Developer · Cloud Computing</div>
             </div>
         </div>
-        <p style="color:var(--muted); font-size:0.88rem;">B.Tech CSE (AI & ML), SRIMT Lucknow (AKTU). Built this transit platform's cloud architecture, pricing engine & UI.</p>
+        <p style="color:var(--muted); font-size:0.88rem;">B.Tech CSE (AI & ML), SRIMT Lucknow (AKTU). Building practical data-driven applications with Python, machine learning, SQL and Power BI.</p>
         <div class="dev-links">
             <a class="dev-link" href="https://deveshpratap.vercel.app" target="_blank" rel="noopener">
                 <span class="ico">🌐</span><span><span class="lbl">Portfolio</span><span class="val">deveshpratap.vercel.app</span></span>
             </a>
-            <a class="dev-link" href="mailto:prd247757@gmail.com">
-                <span class="ico">✉️</span><span><span class="lbl">Email</span><span class="val">prd247757@gmail.com</span></span>
-            </a>
-            <a class="dev-link" href="tel:+917348247757">
-                <span class="ico">📞</span><span><span class="lbl">Phone</span><span class="val">+91 73482 47757</span></span>
+            <a class="dev-link" href="mailto:deveshpratap7757@gmail.com">
+                <span class="ico">✉️</span><span><span class="lbl">Email</span><span class="val">deveshpratap7757@gmail.com</span></span>
             </a>
             <a class="dev-link" href="https://github.com/dvs2121" target="_blank" rel="noopener">
                 <span class="ico">🐙</span><span><span class="lbl">GitHub</span><span class="val">github.com/dvs2121</span></span>
@@ -255,11 +284,8 @@
             <a class="dev-link" href="https://www.linkedin.com/in/devesh-prajapati-8b906b25a" target="_blank" rel="noopener">
                 <span class="ico">💼</span><span><span class="lbl">LinkedIn</span><span class="val">devesh-prajapati-8b906b25a</span></span>
             </a>
-            <a class="dev-link" href="https://www.instagram.com/devesh.prajapati_2128" target="_blank" rel="noopener">
-                <span class="ico">📷</span><span><span class="lbl">Instagram</span><span class="val">@devesh.prajapati_2128</span></span>
-            </a>
-            <a class="dev-link" href="https://maps.google.com/?q=Lucknow,Uttar+Pradesh,India" target="_blank" rel="noopener">
-                <span class="ico">📍</span><span><span class="lbl">Location</span><span class="val">Lucknow, Uttar Pradesh, India</span></span>
+            <a class="dev-link" href="https://drive.google.com/drive/folders/162flDRNx4uubC853h2FjRnv_NVHpYInu?usp=drive_link" target="_blank" rel="noopener">
+                <span class="ico">◫</span><span><span class="lbl">Certificates</span><span class="val">Open certificate collection</span></span>
             </a>
         </div>
     </div>
